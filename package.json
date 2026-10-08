@@ -1,0 +1,58 @@
+{
+  "name": "apex-lwc-guardian",
+  "description": "Scans changed Apex and LWC on a Copado user story, gates risky changes before work submit, and writes a release brief.",
+  "version": "0.1.0",
+  "author": "Vaibhav Nautiyal",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": "./dist/index.js",
+  "license": "MIT",
+  "keywords": [
+    "oclif-plugin",
+    "agentia"
+  ],
+  "files": [
+    "/dist",
+    "/oclif.manifest.json"
+  ],
+  "dependencies": {
+    "@oclif/core": "^4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^20.19.43",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "oclif": "^4",
+    "prettier": "^3.9.9",
+    "shx": "^0.3.3",
+    "typescript": "^5",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^3.2.7"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "oclif": {
+    "bin": "agentia",
+    "dirname": "agentia-cli",
+    "commands": "./dist/commands",
+    "topics": {
+      "guardian": {
+        "description": "Apex and LWC risk scanning, gating and release briefs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "shx rm -rf dist && tsc -b",
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "shx rm -f oclif.manifest.json",
+    "prepack": "npm run build && oclif manifest",
+    "postpack": "npm run clean"
+  }
+}

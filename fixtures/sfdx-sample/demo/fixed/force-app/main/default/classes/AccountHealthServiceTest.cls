@@ -1,0 +1,16 @@
+@IsTest
+private class AccountHealthServiceTest {
+    @IsTest
+    static void returnsHealthForEachAccount() {
+        Account acc = new Account(Name = 'Acme');
+        insert acc;
+        insert new Case(AccountId = acc.Id, Subject = 'Broken');
+
+        Test.startTest();
+        List<AccountHealthService.AccountHealth> health = AccountHealthService.getHealth(new List<Id>{ acc.Id });
+        Test.stopTest();
+
+        Assert.areEqual(1, health.size(), 'One result per account');
+        Assert.areEqual(1, health[0].openCases, 'The open case is counted');
+    }
+}

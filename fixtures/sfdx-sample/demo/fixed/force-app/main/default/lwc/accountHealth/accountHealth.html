@@ -1,0 +1,8 @@
+<template>
+    <lightning-card title="Account health" icon-name="standard:account">
+        <div class="health slds-p-horizontal_small"><b>{openCases}</b> open cases</div>
+        <template lwc:if={error}>
+            <p class="slds-p-horizontal_small slds-text-color_error">{error}</p>
+        </template>
+    </lightning-card>
+</template>

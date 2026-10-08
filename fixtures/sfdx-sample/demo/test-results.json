@@ -1,0 +1,25 @@
+{
+  "status": 0,
+  "result": {
+    "summary": {
+      "outcome": "Passed",
+      "testsRan": 1,
+      "passing": 1,
+      "failing": 0,
+      "skipped": 0,
+      "passRate": "100%",
+      "failRate": "0%",
+      "orgWideCoverage": "84%",
+      "testRunCoverage": "92%",
+      "testExecutionTime": "412 ms"
+    },
+    "tests": [
+      {
+        "FullName": "AccountHealthServiceTest.returnsHealthForEachAccount",
+        "MethodName": "returnsHealthForEachAccount",
+        "Outcome": "Pass",
+        "ApexClass": {"Name": "AccountHealthServiceTest"}
+      }
+    ]
+  }
+}

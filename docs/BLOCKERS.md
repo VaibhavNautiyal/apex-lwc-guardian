@@ -59,4 +59,7 @@ Open items that block or change part of the plan. Details and command output are
   `C:\Users\hp` is such a repo, so `setup` must be run from a real project repo.
 - Users can bypass the quality-gate hook with `agentia cicd work submit --skip-local-tests`. Guardian
   is a guard rail there; CI should also run `agentia guardian gate`.
-- The scaffold's dev dependencies report 4 high-severity npm audit advisories.
+- `npm audit` (2026-10-08): **0 vulnerabilities in runtime dependencies** (`npm audit --omit=dev`).
+  7 advisories in dev-only tooling: the `oclif` packaging CLI (via micromatch/braces; npm's only
+  "fix" is a downgrade to oclif 1.x) and `vitest` 3 (via tinypool; fixed in vitest 5, a major
+  upgrade). Neither ships to users. Upgrade vitest to 5 as a separate change.

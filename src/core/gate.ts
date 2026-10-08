@@ -1,3 +1,4 @@
+import {notifyGateFailure} from '../notify/slack.js'
 import {appendAudit, buildAuditEntry} from './audit.js'
 import {gitUser} from './git.js'
 import {evaluateGate, scan, type ScanOutcome, type ScanRequest} from './scanner.js'
@@ -13,6 +14,8 @@ export interface GateOutcome extends ScanOutcome {
   auditPath: string | null
   /** Why the audit line could not be written. Never changes the gate result. */
   auditError: string | null
+  /** True when a Slack message was sent (gate failed and GUARDIAN_SLACK_WEBHOOK is set). */
+  slackNotified: boolean
 }
 
 /** Scans, applies the thresholds and appends an audit line. */
@@ -33,5 +36,6 @@ export async function runGate(request: GateRequest): Promise<GateOutcome> {
       auditError = (error as Error).message
     }
   }
-  return {...outcome, gate, auditPath, auditError}
+  const slackNotified = await notifyGateFailure(gate, {storyId: request.storyId})
+  return {...outcome, gate, auditPath, auditError, slackNotified}
 }

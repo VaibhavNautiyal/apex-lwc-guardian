@@ -3,6 +3,20 @@
 Each rule reports a finding with a rule ID, severity, file, 1-based line, a short explanation and a
 suggested fix. Severities can be changed, and rules switched off, in `guardian.config.yml`.
 
+## Risk score
+
+Every scan has a risk score from 0 to 100: the sum of a weight per finding, capped at 100.
+
+| Severity | Weight |
+| -------- | ------ |
+| error    | 10     |
+| warning  | 3      |
+| info     | 1      |
+
+For example, 2 errors and 3 warnings score `2 x 10 + 3 x 3 = 29`. Severity overrides in the config
+change the weight used. `gate` fails when any finding is at or above `thresholds.failOn`, or when the
+score is above `thresholds.maxRiskScore`.
+
 ## How the Apex rules read code
 
 Guardian does not compile Apex. A small preprocessor (`src/lang/apex-preprocess.ts`):

@@ -1,0 +1,27 @@
+# Copy to guardian.config.yml in the repository root. Every key is optional; defaults are shown.
+
+# Branch that `scan` and `gate` compare against (falls back to origin/<baseBranch>).
+baseBranch: main
+
+# Which files are scanned (glob patterns, repo-relative). Only .cls, .trigger and lwc/**/*.js|html
+# files are ever scanned.
+include: ['force-app/**']
+ignore: ['**/*.test.js', '**/__tests__/**', '**/node_modules/**']
+
+# Per-rule overrides: change the severity (error | warning | info) or switch a rule off.
+rules:
+  APEX004: {severity: error}
+  APEX011: {enabled: false}
+
+thresholds:
+  failOn: error # gate fails on findings of this severity or higher: error | warning
+  maxRiskScore: 100 # gate also fails if the risk score (0-100) is above this
+
+# APEX008: maximum lines of logic in a trigger body.
+triggerMaxLines: 15
+
+# LWC004: absolute URL prefixes that are allowed in LWC JavaScript.
+urlAllowList: []
+
+# One JSON line per `gate` run. No source code is ever written.
+audit: {enabled: true, path: .guardian/audit.jsonl}

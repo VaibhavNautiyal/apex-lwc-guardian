@@ -41,8 +41,10 @@ export interface ScanResult {
   filesScanned: number
   findings: Finding[]
   riskScore: number // 0-100
-  baseRef: string
-  headRef: string
+  baseRef: string // base branch or ref compared against; 'none' with --all or --files
+  headRef: string // 'HEAD', or 'WORKTREE' outside a git repository
+  baseSha: string | null
+  headSha: string | null
 }
 
 export interface GateResult extends ScanResult {

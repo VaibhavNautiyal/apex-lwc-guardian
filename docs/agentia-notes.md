@@ -356,3 +356,25 @@ Rebuild (`npm run build`) after every TypeScript change; linked plugins load `di
 - `attachBriefToStory(id, md)` → `agentia cicd work update <id> --technical-specifications <md> --json`,
   pending the decision in BLOCKERS B1; return `true` only on exit 0 and no `error` key.
 - Truncate to 30,000 characters before sending; note truncation in the brief.
+
+### As implemented in Phase 5
+
+- On Windows the adapter finds `agentia.cmd` on `PATH` and runs
+  `node <that dir>/node_modules/@copado/agentia-cli/bin/run.js` with `shell: false`. Elsewhere it runs
+  `agentia` directly. `AGENTIA_BIN` overrides both (a `.js` path runs with Node).
+- `askReleaseAgent`: `ai agent ask --agent release --json --no-stream --no-credential-sync
+--timeout 120 --prompt <prompt> [--user-story <id>]`, child process killed after 130 s. Prompt capped
+  at 8,000 characters.
+- `attachBriefToStory` (BLOCKERS B1, decided): `cicd work get <id> --json`, find the Technical
+  Specifications key in `result` (any key matching `technicalSpecifications` or
+  `[copado__]Technical_Specifications__c`), replace or append the section between
+  `<!-- guardian:start -->` and `<!-- guardian:end -->`, then
+  `cicd work update <id> --technical-specifications <merged> --json`. No write when the story cannot
+  be read or the field is missing. Merged text is capped at 30,000 characters (28,000 on Windows, for the
+  32,767-character command-line limit); the Guardian section is truncated first, with a note.
+- Verified against the real CLI without credentials on 2026-10-08: both calls return the documented
+  error envelopes, the brief falls back to the template summary, warnings are printed and the local
+  file is kept (exit 0).
+- Still UNVERIFIED (B3): the success payloads, the exact field key in `work get`, and whether the
+  rich-text field keeps HTML comments. If Salesforce strips the markers, each `--attach` appends a new
+  section instead of replacing the old one (no data is lost).

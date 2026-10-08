@@ -19,7 +19,8 @@ Open items that block or change part of the plan. Details and command output are
   `work update --technical-specifications`. If the story cannot be read, or no Technical
   Specifications field is found in the response, `--attach` does **not** write (to avoid wiping
   content) and prints a warning. `brief` always writes the local file.
-- **Status:** decided; implemented in Phase 5. Field name still to confirm live (B3).
+- **Status:** decided and implemented in Phase 5 (`src/copado/client.ts`). Still to confirm live (B3):
+  the field key in `work get --json`, and whether the rich-text field keeps the HTML comment markers.
 
 ## B2. `&` in the project folder name breaks npm scripts on Windows (RESOLVED)
 
@@ -49,6 +50,8 @@ Open items that block or change part of the plan. Details and command output are
   - `ai agent ask --agent release --json` result shape (`result.content`)
   - whether `work update` accepts a story name (`US-0001`) or needs the Salesforce ID
   - the JSON field name for Technical Specifications in `work get --json`
+  - whether the Technical Specifications field keeps `<!-- guardian:start -->` markers (if it strips
+    them, repeated `--attach` runs append instead of replace)
 
 ## Minor notes (not blocking)
 

@@ -1,65 +1,78 @@
-# apex-lwc-guardian
+# Apex & LWC Guardian
 
-Scans changed Apex and LWC on a Copado user story, gates risky changes before work submit, and writes a release brief.
-
-After install or link, it adds:
+A plugin for the Copado Agentia CLI that scans the Apex and LWC files changed on a user story, blocks
+risky changes before `agentia cicd work submit`, and writes a release brief to the story.
 
 ```text
-agentia guardian hello [NAME] [--from VALUE]
+agentia guardian scan    Analyse changed Apex/LWC files and print findings
+agentia guardian gate    Same scan; exit 1 when blocking findings exist
+agentia guardian brief   Write a release brief; optionally attach it to the user story
 ```
 
-## Getting started
-
-If you created this plugin with `npm init @copado/agentia-plugin`, dependencies are already installed.
+## Install (from source)
 
 ```sh
+npm ci
 npm run build
 agentia plugins link .
+agentia guardian --help
 ```
 
-Confirm:
+Re-run `npm run build` after TypeScript changes. Linked plugins load the compiled `dist/` output.
+
+## MCP server
+
+`guardian-mcp` is a stdio MCP server with three tools: `guardian_scan`, `guardian_gate` and
+`guardian_brief`. They return the same JSON as the CLI with `--json`. Each tool takes an optional
+`cwd` (absolute path of the project); without it the server uses `GUARDIAN_PROJECT_ROOT`, then
+`AGENTIA_PROJECT_ROOT`, then its own working folder.
+
+When working from source, run the bin with Node: replace `/abs/path/apex-lwc-guardian` below with this
+folder. After `npm install -g apex-lwc-guardian` you can use `"command": "guardian-mcp"` with no args.
+
+**Claude Code** ([docs](https://code.claude.com/docs/en/mcp)). From your Salesforce project:
 
 ```sh
-agentia plugins
-agentia guardian hello
-agentia guardian hello World --from me
+claude mcp add --transport stdio --scope project guardian -- node /abs/path/apex-lwc-guardian/bin/guardian-mcp.js
 ```
 
-Re-run `npm run build` after TypeScript changes. Linked ESM plugins load compiled `dist/` output.
+or add it to the project's `.mcp.json`:
 
-## Install from npm
-
-```sh
-agentia plugins install apex-lwc-guardian
+```json
+{
+  "mcpServers": {
+    "guardian": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/abs/path/apex-lwc-guardian/bin/guardian-mcp.js"]
+    }
+  }
+}
 ```
 
-## What plugins can do today
+**Cursor** ([docs](https://cursor.com/docs/mcp)): `.cursor/mcp.json` in the project, or
+`~/.cursor/mcp.json`:
 
-- Add new commands (`agentia <topic> <command>`)
-- Use oclif flags, args, and standard command lifecycle
-- Link or install like any other oclif plugin
-
-## Not supported yet
-
-- Calling Agentia CLI internals (auth, org/context, work items, git, and similar host services)
-- Extending or wrapping existing Agentia commands (`cicd work commit`, and so on)
-- Registering MCP tools through a plugin (`agentia mcp start` only loads tools shipped with the CLI)
-
-A first-party API for selected CLI integration points is planned. Do not
-depend on private Agentia source paths in the meantime.
-
-## Layout
-
-```text
-apex-lwc-guardian/
-  package.json
-  tsconfig.json
-  src/
-    index.ts
-    commands/
-      guardian/
-        hello.ts
-  dist/
+```json
+{
+  "mcpServers": {
+    "guardian": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/abs/path/apex-lwc-guardian/bin/guardian-mcp.js"],
+      "env": {"GUARDIAN_PROJECT_ROOT": "${workspaceFolder}"}
+    }
+  }
+}
 ```
 
-Generated with `npm init @copado/agentia-plugin`.
+Check it starts: `npm run build && node scripts/mcp-smoke.mjs /path/to/project`.
+
+Agents should follow [AGENTS.md](AGENTS.md) and [skills/guardian/SKILL.md](skills/guardian/SKILL.md).
+
+## Documentation
+
+- [docs/rules.md](docs/rules.md): every rule, the risk score and known limits
+- [guardian.config.example.yml](guardian.config.example.yml): configuration
+- [docs/agentia-notes.md](docs/agentia-notes.md): verified Agentia CLI behaviour
+- [docs/BLOCKERS.md](docs/BLOCKERS.md): open items

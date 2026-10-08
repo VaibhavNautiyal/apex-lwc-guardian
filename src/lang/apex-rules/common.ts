@@ -1,10 +1,8 @@
-import type {Finding, Rule, SourceFile} from '../../core/types.js'
-import {type ApexSource, preprocessApex, skipSpace} from '../apex-preprocess.js'
+import type {SourceFile} from '../../core/types.js'
+import {type ApexSource, preprocessApex} from '../apex-preprocess.js'
+import {allMatches, skipSpace} from '../text.js'
 
-export interface RuleText {
-  explanation: string
-  suggestion: string
-}
+export {finding, type RuleText} from '../finding.js'
 
 export function apexOf(file: SourceFile): ApexSource {
   return preprocessApex(file.content)
@@ -21,32 +19,6 @@ export function isClass(file: SourceFile): boolean {
 /** True when a top-level class in the file is annotated `@isTest`. */
 export function isTestClass(src: ApexSource): boolean {
   return src.classes.some((c) => c.topLevel && /@istest\b/.test(c.header))
-}
-
-export function finding(
-  rule: Pick<Rule, 'id' | 'defaultSeverity'>,
-  file: SourceFile,
-  line: number,
-  message: string,
-  text: RuleText,
-): Finding {
-  return {
-    ruleId: rule.id,
-    severity: rule.defaultSeverity,
-    file: file.path,
-    line,
-    message,
-    explanation: text.explanation,
-    suggestion: text.suggestion,
-  }
-}
-
-function allMatches(code: string, re: RegExp): number[] {
-  const offsets: number[] = []
-  const global = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g')
-  let m: RegExpExecArray | null
-  while ((m = global.exec(code))) offsets.push(m.index)
-  return offsets
 }
 
 const STATIC_SOQL = /\[\s*select\b/i

@@ -6,17 +6,20 @@
  * `code` so that text inside comments or strings never triggers them.
  */
 
-export interface Range {
-  /** Inclusive start offset. */
-  start: number
-  /** Exclusive end offset. */
-  end: number
-}
+import {
+  blankRange,
+  bracketMatcher,
+  lineLocator,
+  OPENERS,
+  previousNonSpace,
+  type Range,
+  skipSpace,
+  type StringLiteral,
+  wordBefore,
+} from './text.js'
 
-export interface StringLiteral extends Range {
-  /** The literal's content, without quotes, as written in the original source. */
-  value: string
-}
+export type {Range, StringLiteral}
+export {skipSpace}
 
 export interface MethodInfo {
   name: string
@@ -51,9 +54,6 @@ export interface ApexSource {
   isInLoop(offset: number): boolean
 }
 
-const OPENERS: Record<string, string> = {'(': ')', '[': ']', '{': '}'}
-const CLOSERS: Record<string, string> = {')': '(', ']': '[', '}': '{'}
-
 /** Words followed by `(` that are never method declarations. */
 const NOT_METHOD_NAMES = new Set([
   'if',
@@ -87,9 +87,8 @@ export function preprocessApex(original: string): ApexSource {
 
 function build(original: string): ApexSource {
   const {code, strings, comments} = blank(original)
-  const lineStarts = computeLineStarts(original)
-  const matches = matchBrackets(code)
-  const matchOf = (offset: number): number => matches.get(offset) ?? -1
+  const lineAt = lineLocator(original)
+  const matchOf = bracketMatcher(code)
   const loops = findLoops(code, matchOf)
   const methods = findMethods(code, matchOf)
   const classes = findClasses(code, matchOf)
@@ -102,7 +101,7 @@ function build(original: string): ApexSource {
     loops,
     methods,
     classes,
-    lineAt: (offset) => lineAt(lineStarts, offset),
+    lineAt,
     matchOf,
     isInLoop: (offset) => loops.some((loop) => offset >= loop.start && offset < loop.end),
   }
@@ -112,11 +111,6 @@ function blank(src: string): {code: string; strings: StringLiteral[]; comments: 
   const out = src.split('')
   const strings: StringLiteral[] = []
   const comments: Range[] = []
-  const blankRange = (from: number, to: number): void => {
-    for (let k = from; k < to; k++) {
-      if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '
-    }
-  }
 
   let i = 0
   while (i < src.length) {
@@ -125,13 +119,13 @@ function blank(src: string): {code: string; strings: StringLiteral[]; comments: 
     if (c === '/' && next === '/') {
       let j = i
       while (j < src.length && src[j] !== '\n') j++
-      blankRange(i, j)
+      blankRange(out, i, j)
       comments.push({start: i, end: j})
       i = j
     } else if (c === '/' && next === '*') {
       const close = src.indexOf('*/', i + 2)
       const j = close === -1 ? src.length : close + 2
-      blankRange(i, j)
+      blankRange(out, i, j)
       comments.push({start: i, end: j})
       i = j
     } else if (c === "'") {
@@ -140,7 +134,7 @@ function blank(src: string): {code: string; strings: StringLiteral[]; comments: 
         j += src[j] === '\\' ? 2 : 1
       }
       j = Math.min(j, src.length)
-      blankRange(i + 1, j)
+      blankRange(out, i + 1, j)
       strings.push({start: i, end: Math.min(j + 1, src.length), value: src.slice(i + 1, j)})
       i = j + 1
     } else {
@@ -150,65 +144,9 @@ function blank(src: string): {code: string; strings: StringLiteral[]; comments: 
   return {code: out.join(''), strings, comments}
 }
 
-function computeLineStarts(src: string): number[] {
-  const starts = [0]
-  for (let i = 0; i < src.length; i++) {
-    if (src[i] === '\n') starts.push(i + 1)
-  }
-  return starts
-}
-
-function lineAt(lineStarts: number[], offset: number): number {
-  let lo = 0
-  let hi = lineStarts.length - 1
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1
-    if (lineStarts[mid] <= offset) lo = mid
-    else hi = mid - 1
-  }
-  return lo + 1
-}
-
-function matchBrackets(code: string): Map<number, number> {
-  const matches = new Map<number, number>()
-  const stacks: Record<string, number[]> = {'(': [], '[': [], '{': []}
-  for (let i = 0; i < code.length; i++) {
-    const c = code[i]
-    if (c in OPENERS) {
-      stacks[c].push(i)
-    } else if (c in CLOSERS) {
-      const open = stacks[CLOSERS[c]].pop()
-      if (open !== undefined) {
-        matches.set(open, i)
-        matches.set(i, open)
-      }
-    }
-  }
-  return matches
-}
-
-export function skipSpace(code: string, offset: number): number {
-  let i = offset
-  while (i < code.length && /\s/.test(code[i])) i++
-  return i
-}
-
-function previousNonSpace(code: string, offset: number): number {
-  let i = offset - 1
-  while (i >= 0 && /\s/.test(code[i])) i--
-  return i
-}
-
 function wordAt(code: string, offset: number): string {
   const m = /^[A-Za-z_]\w*/.exec(code.slice(offset, offset + 64))
   return m ? m[0].toLowerCase() : ''
-}
-
-function wordBefore(code: string, offset: number): string {
-  const end = previousNonSpace(code, offset) + 1
-  let start = end
-  while (start > 0 && /\w/.test(code[start - 1])) start--
-  return code.slice(start, end).toLowerCase()
 }
 
 /** Body range of a statement starting at `start` (a block or a single statement). */

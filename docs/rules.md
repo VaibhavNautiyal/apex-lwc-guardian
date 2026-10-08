@@ -153,3 +153,77 @@ quiet, because false positives cost more trust than a missed rare case.
 - **Fix:** log, rethrow or handle the exception.
 - **Not reported:** a catch block that contains only a comment. The comment is taken as a deliberate,
   documented choice.
+
+---
+
+## How the LWC rules read code
+
+LWC rules scan `.js` and `.html` files under `lwc/`. The JavaScript preprocessor
+(`src/lang/lwc-preprocess.ts`) blanks comments, string contents, the text parts of template literals
+and regular-expression literals, keeping line numbers. Code inside `${...}` stays visible. In HTML,
+`<!-- -->` comments are blanked. As with Apex, rules look at one file at a time.
+
+| ID                                                                      | Severity | Title                                                     |
+| ----------------------------------------------------------------------- | -------- | --------------------------------------------------------- |
+| [LWC001](#lwc001-imperative-apex-call-without-error-handling)           | warning  | Imperative Apex call without error handling               |
+| [LWC002](#lwc002-html-injection-innerhtml-outerhtml-insertadjacenthtml) | error    | HTML injection (innerHTML, outerHTML, insertAdjacentHTML) |
+| [LWC003](#lwc003-eval-or-function-constructor)                          | error    | eval or Function constructor                              |
+| [LWC004](#lwc004-hardcoded-record-id-or-absolute-url)                   | warning  | Hardcoded record ID or absolute URL                       |
+| [LWC005](#lwc005-consolelog-or-debugger-left-in)                        | info     | console.log or debugger left in                           |
+
+## LWC001 Imperative Apex call without error handling
+
+- **Detects:** calls to a function imported from `@salesforce/apex/...` where a rejected promise is not
+  handled:
+  - `await apexMethod()` that is not inside a `try` block with a `catch` clause;
+  - `apexMethod().then(...)` used as a statement with no `.catch(...)` and no two-argument `.then(ok, err)`;
+  - `apexMethod();` with the promise ignored.
+- **Why:** a failed call (validation rule, limit, expired session) is silently lost and the component
+  is left half-updated.
+- **Fix:** add `.catch()` or wrap the `await` in `try/catch`, and show the error to the user.
+- **Not reported:** `@wire` adapters; `return apexMethod()` (the caller handles it); promises stored in
+  a variable, passed as an argument (for example to `Promise.all`) or returned from an arrow function.
+  These are followed elsewhere and checking them would need data-flow analysis.
+- **Limits:** `try/finally` without `catch` does not count as handling. A `try/catch` in a calling
+  function is not seen.
+
+## LWC002 HTML injection (innerHTML, outerHTML, insertAdjacentHTML)
+
+- **Detects:** in JavaScript, assignments (`=` and `+=`) to `.innerHTML` or `.outerHTML`, and calls to
+  `insertAdjacentHTML(`; in templates, the `lwc:inner-html` directive.
+- **Why:** HTML strings built from data allow cross-site scripting.
+- **Fix:** render markup in the template, set `textContent`, or use `lightning-formatted-rich-text`.
+- **Not reported:** reading `innerHTML`, comparisons (`===`), mentions in comments and strings.
+- **Limits:** every write is reported, even of constant strings, because the rule cannot tell where
+  the value comes from. Downgrade or disable the rule in config if a component writes trusted markup.
+
+## LWC003 eval or Function constructor
+
+- **Detects:** `eval(`, `window.eval(` / `globalThis.eval(` / `self.eval(`, `new Function(` and
+  `Function(`.
+- **Why:** strings run as code allow injection and are blocked by Lightning Web Security in many cases.
+- **Fix:** use plain functions, a lookup table of handlers, or `JSON.parse` for data.
+- **Not reported:** methods named `eval` on other objects (`engine.eval(`), identifiers that end in
+  `Function` (`isFunction(`), mentions in comments and strings.
+- **Limits:** `setTimeout('code')` with a string argument is not reported.
+
+## LWC004 Hardcoded record ID or absolute URL
+
+- **Detects:** a string (or a static part of a template literal) that is a record ID (same check as
+  APEX005) or starts with `http://` or `https://` followed by a host.
+- **Why:** IDs and hosts differ between orgs, sandboxes and My Domain settings.
+- **Fix:** take IDs from `@api`/`recordId` or Apex; use `NavigationMixin` or relative paths for
+  Salesforce pages, and Named Credentials or Custom Metadata for external endpoints.
+- **Not reported:** XML namespace URIs under `http://www.w3.org/` (for example the SVG namespace),
+  URLs that start with a prefix in the config `urlAllowList`, URLs whose host is an expression
+  (`` `https://${host}/x` ``), mentions in comments.
+- **Limits:** IDs and URLs built by concatenating short strings are not recognised.
+
+## LWC005 console.log or debugger left in
+
+- **Detects:** `console.log(`, `console.debug(` and `debugger` statements.
+- **Why:** development leftovers clutter the console, can expose record data, and `debugger` pauses
+  users who have developer tools open.
+- **Fix:** remove them before release.
+- **Not reported:** `console.error`, `console.warn` and `console.info` (legitimate reporting), `log`
+  methods on other objects, mentions in comments and strings.

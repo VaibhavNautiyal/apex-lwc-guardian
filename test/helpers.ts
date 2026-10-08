@@ -4,6 +4,7 @@ import {join} from 'node:path'
 import {runRules} from '../src/core/scanner.js'
 import type {Finding, Language, Rule, SourceFile} from '../src/core/types.js'
 import {apexRules} from '../src/lang/apex-rules/index.js'
+import {lwcRules} from '../src/lang/lwc-rules/index.js'
 
 export const SAMPLE_ROOT = join(import.meta.dirname, '..', 'fixtures', 'sfdx-sample')
 export const DEFAULT_DIR = 'force-app/main/default'
@@ -22,6 +23,14 @@ export function apexSource(content: string, name = 'classes/Inline.cls'): Source
 /** `[ruleId, line]` pairs, in scanner order. */
 export function hits(findings: Finding[]): [string, number][] {
   return findings.map((f) => [f.ruleId, f.line])
+}
+
+export function lwcSource(content: string, name = 'lwc/inline/inline.js'): SourceFile {
+  return {path: `${DEFAULT_DIR}/${name}`, language: 'lwc', content}
+}
+
+export function scanLwc(file: SourceFile, rules: readonly Rule[] = lwcRules): [string, number][] {
+  return hits(runRules([file], rules))
 }
 
 export function scanApex(file: SourceFile, rules: readonly Rule[] = apexRules): [string, number][] {

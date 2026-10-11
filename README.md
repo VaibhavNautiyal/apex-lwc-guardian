@@ -101,6 +101,29 @@ into the story's **Technical Specifications** field (`agentia cicd work update
 be read, nothing is written, a warning is printed and the local file is kept. See
 [docs/BLOCKERS.md](docs/BLOCKERS.md) (B1, B3).
 
+### `agentia guardian ui`
+
+Opens a local web dashboard in your browser for the same scan, gate and brief, plus the audit
+history and the effective rules and config. It calls the same core functions as the CLI, so results
+match `--json` output exactly.
+
+```sh
+agentia guardian ui                    # http://localhost:4870/, opens the browser
+agentia guardian ui --port 0 --no-open # pick a free port, print the URL only
+npx guardian-ui ../guardian-demo       # without the Agentia CLI (after npm run build)
+```
+
+| View           | Shows                                                                                                                                           |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scan & gate    | Pass/fail verdict, risk score gauge, counts, and findings grouped by file with the source line, explanation and fix; filter by severity or text |
+| Release brief  | Writes `.guardian/briefs/<story>.md` and renders it; copy or download the Markdown                                                              |
+| Audit history  | Risk score per gate run, pass rate and every audit log entry                                                                                    |
+| Rules & config | Thresholds, include and ignore paths, and each rule's effective severity and status                                                             |
+
+The server listens on `127.0.0.1` only, answers only requests addressed to `localhost`, and accepts
+changes (gate, brief) only as JSON, so other web pages cannot drive it. It reads source only for
+`.cls`, `.trigger` and LWC files inside the project. Press Ctrl+C to stop it.
+
 ## Rules
 
 16 rules. Details, examples and known limits for each are in [docs/rules.md](docs/rules.md).
